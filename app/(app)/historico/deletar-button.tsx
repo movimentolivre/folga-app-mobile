@@ -15,7 +15,7 @@ export function BotaoDeletarFolga({ id }: { id: number }) {
     <button
       onClick={handleClick}
       disabled={isPending}
-      className="text-xs text-red-600 underline disabled:opacity-50"
+      className="text-xs text-red-600 underline disabled:opacity-50 print:hidden"
     >
       Remover
     </button>

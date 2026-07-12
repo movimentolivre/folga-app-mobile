@@ -1,11 +1,12 @@
-import { getColaboradoresAtivos, getFolgasRecentes, getRankingJustica } from "@/actions/folgas";
+import { getColaboradoresAtivos, getFolgasRecentes, getPeriodoAtualLabel, getRankingJustica } from "@/actions/folgas";
 import { BotaoMarcarFolga } from "./marcar-folga-button";
 
 export default async function DashboardPage() {
-  const [colaboradores, recentes, ranking] = await Promise.all([
+  const [colaboradores, recentes, ranking, periodoLabel] = await Promise.all([
     getColaboradoresAtivos(),
     getFolgasRecentes(5),
     getRankingJustica(),
+    getPeriodoAtualLabel(),
   ]);
 
   const top3 = ranking.slice(0, 3);
@@ -14,7 +15,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <section>
         <h2 className="mb-3 text-sm font-semibold text-gray-500 uppercase">
-          Sugestão de rodízio (mais justo agora)
+          Sugestão de rodízio · fechamento {periodoLabel}
         </h2>
         <div className="space-y-2">
           {top3.map((r, i) => (
@@ -26,7 +27,7 @@ export default async function DashboardPage() {
                 {i + 1}º {r.nome}
               </span>
               <span className="text-gray-500">
-                {r.totalNoMes} folga(s) este mês
+                {r.totalNoMes} folga(s) neste período
                 {r.diasSemFolgar < 999 ? ` · ${r.diasSemFolgar}d sem folgar` : " · nunca folgou"}
               </span>
             </div>

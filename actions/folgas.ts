@@ -13,6 +13,30 @@ const DIAS_SEMANA = [
   "Sábado",
 ];
 
+/**
+ * Fechamento do mês vai do dia 16 ao dia 15 do mês seguinte.
+ * `mes`/`ano` aqui representam o MÊS DE FECHAMENTO (ex: mes=7 -> período de
+ * 16/06 a 15/07).
+ */
+function getIntervaloPeriodo(mes: number, ano: number) {
+  const inicio = new Date(ano, mes - 2, 16, 0, 0, 0, 0);
+  const fim = new Date(ano, mes - 1, 15, 23, 59, 59, 999);
+  return { inicio, fim };
+}
+
+/** Período de fechamento (16 a 15) que contém a data de referência (hoje, por padrão). */
+function getPeriodoAtual(referencia: Date = new Date()) {
+  const dia = referencia.getDate();
+  if (dia >= 16) {
+    const inicio = new Date(referencia.getFullYear(), referencia.getMonth(), 16);
+    const fim = new Date(referencia.getFullYear(), referencia.getMonth() + 1, 15, 23, 59, 59, 999);
+    return { inicio, fim };
+  }
+  const inicio = new Date(referencia.getFullYear(), referencia.getMonth() - 1, 16);
+  const fim = new Date(referencia.getFullYear(), referencia.getMonth(), 15, 23, 59, 59, 999);
+  return { inicio, fim };
+}
+
 export async function getColaboradoresAtivos() {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -79,11 +103,12 @@ export async function deletarFolga(id: number) {
 
 export async function getFolgasPorMes(mes: number, ano: number) {
   const supabase = await createClient();
+  const { inicio, fim } = getIntervaloPeriodo(mes, ano);
   const { data, error } = await supabase
     .from("folgas")
     .select("*, colaboradores(nome)")
-    .eq("mes", mes)
-    .eq("ano", ano)
+    .gte("data_hora", inicio.toISOString())
+    .lte("data_hora", fim.toISOString())
     .order("data_hora", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -104,11 +129,12 @@ export async function getFolgasRecentes(limite = 5) {
 
 export async function getTotalFolgasPorColaborador(mes: number, ano: number) {
   const supabase = await createClient();
+  const { inicio, fim } = getIntervaloPeriodo(mes, ano);
   const { data, error } = await supabase
     .from("folgas")
     .select("colaborador_id, colaboradores(nome)")
-    .eq("mes", mes)
-    .eq("ano", ano);
+    .gte("data_hora", inicio.toISOString())
+    .lte("data_hora", fim.toISOString());
 
   if (error) throw new Error(error.message);
 
@@ -125,11 +151,17 @@ export async function getTotalFolgasPorColaborador(mes: number, ano: number) {
   }));
 }
 
+/** Retorna o rótulo do período de fechamento atual, ex: "16/06 a 15/07/2026". */
+export async function getPeriodoAtualLabel() {
+  const { inicio, fim } = getPeriodoAtual();
+  const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return `${fmt(inicio)} a ${fmt(fim)}/${fim.getFullYear()}`;
+}
+
 export async function getRankingJustica() {
   const supabase = await createClient();
   const agora = new Date();
-  const mes = agora.getMonth() + 1;
-  const ano = agora.getFullYear();
+  const { inicio, fim } = getPeriodoAtual(agora);
 
   const { data: colaboradores, error: colabError } = await supabase
     .from("colaboradores")
@@ -139,13 +171,16 @@ export async function getRankingJustica() {
 
   const { data: todasFolgas, error: folgasError } = await supabase
     .from("folgas")
-    .select("colaborador_id, data_hora, mes, ano")
+    .select("colaborador_id, data_hora")
     .order("data_hora", { ascending: false });
   if (folgasError) throw new Error(folgasError.message);
 
   const ranking = (colaboradores ?? []).map((c) => {
     const folgasDoColaborador = (todasFolgas ?? []).filter((f) => f.colaborador_id === c.id);
-    const totalNoMes = folgasDoColaborador.filter((f) => f.mes === mes && f.ano === ano).length;
+    const totalNoPeriodo = folgasDoColaborador.filter((f) => {
+      const data = new Date(f.data_hora);
+      return data >= inicio && data <= fim;
+    }).length;
 
     const ultimaFolga = folgasDoColaborador[0]?.data_hora
       ? new Date(folgasDoColaborador[0].data_hora)
@@ -157,13 +192,14 @@ export async function getRankingJustica() {
     return {
       colaboradorId: c.id,
       nome: c.nome,
-      totalNoMes,
+      totalNoMes: totalNoPeriodo,
       diasSemFolgar,
     };
   });
 
-  // Mais justo primeiro: quem tem menos folgas no mês, depois quem está há mais
-  // tempo sem folgar. Não é uma fila rígida — só uma sugestão que se ajusta sozinha.
+  // Mais justo primeiro: quem tem menos folgas no período de fechamento atual
+  // (16 a 15), depois quem está há mais tempo sem folgar. Não é fila rígida —
+  // só uma sugestão que se ajusta sozinha.
   ranking.sort((a, b) => {
     if (a.totalNoMes !== b.totalNoMes) return a.totalNoMes - b.totalNoMes;
     return b.diasSemFolgar - a.diasSemFolgar;
