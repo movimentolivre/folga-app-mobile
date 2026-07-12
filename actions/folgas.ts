@@ -154,8 +154,9 @@ export async function getTotalFolgasPorColaborador(mes: number, ano: number) {
 /** Retorna o rótulo do período de fechamento atual, ex: "16/06 a 15/07/2026". */
 export async function getPeriodoAtualLabel() {
   const { inicio, fim } = getPeriodoAtual();
-  const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-  return `${fmt(inicio)} a ${fmt(fim)}/${fim.getFullYear()}`;
+  const fmt = (d: Date) =>
+    `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  return `${fmt(inicio)} a ${fmt(fim)}`;
 }
 
 export async function getRankingJustica() {

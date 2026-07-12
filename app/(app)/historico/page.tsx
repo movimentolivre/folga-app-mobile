@@ -11,9 +11,10 @@ const MESES = [
 /** Rótulo do período de fechamento representado por um mês (16 do mês anterior a 15 do mês escolhido). */
 function labelPeriodo(mes: number, ano: number) {
   const mesAnteriorIdx = mes - 2 < 0 ? 11 : mes - 2;
+  const anoAnterior = mes - 2 < 0 ? ano - 1 : ano;
   const abrevAnterior = MESES[mesAnteriorIdx].slice(0, 3);
   const abrevAtual = MESES[mes - 1].slice(0, 3);
-  return `16/${abrevAnterior} a 15/${abrevAtual}/${ano}`;
+  return `16/${abrevAnterior}/${anoAnterior} a 15/${abrevAtual}/${ano}`;
 }
 
 export default async function HistoricoPage({
