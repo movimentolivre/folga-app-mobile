@@ -125,6 +125,52 @@ export async function getTotalFolgasPorColaborador(mes: number, ano: number) {
   }));
 }
 
+export async function getRankingJustica() {
+  const supabase = await createClient();
+  const agora = new Date();
+  const mes = agora.getMonth() + 1;
+  const ano = agora.getFullYear();
+
+  const { data: colaboradores, error: colabError } = await supabase
+    .from("colaboradores")
+    .select("*")
+    .eq("ativo", true);
+  if (colabError) throw new Error(colabError.message);
+
+  const { data: todasFolgas, error: folgasError } = await supabase
+    .from("folgas")
+    .select("colaborador_id, data_hora, mes, ano")
+    .order("data_hora", { ascending: false });
+  if (folgasError) throw new Error(folgasError.message);
+
+  const ranking = (colaboradores ?? []).map((c) => {
+    const folgasDoColaborador = (todasFolgas ?? []).filter((f) => f.colaborador_id === c.id);
+    const totalNoMes = folgasDoColaborador.filter((f) => f.mes === mes && f.ano === ano).length;
+
+    const ultimaFolga = folgasDoColaborador[0]?.data_hora
+      ? new Date(folgasDoColaborador[0].data_hora)
+      : null;
+    const diasSemFolgar = ultimaFolga
+      ? Math.floor((agora.getTime() - ultimaFolga.getTime()) / (1000 * 60 * 60 * 24))
+      : 999; // nunca folgou = prioridade alta
+
+    return {
+      colaboradorId: c.id,
+      nome: c.nome,
+      totalNoMes,
+      diasSemFolgar,
+    };
+  });
+
+  // Mais justo primeiro: quem tem menos folgas no mês, depois quem está há mais
+  // tempo sem folgar. Não é uma fila rígida — só uma sugestão que se ajusta sozinha.
+  ranking.sort((a, b) => {
+    if (a.totalNoMes !== b.totalNoMes) return a.totalNoMes - b.totalNoMes;
+    return b.diasSemFolgar - a.diasSemFolgar;
+  });
+
+  return ranking;
+}
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

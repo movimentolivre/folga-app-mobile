@@ -1,5 +1,6 @@
 import { getFolgasPorMes, getTotalFolgasPorColaborador } from "@/actions/folgas";
 import { BotaoDeletarFolga } from "./deletar-button";
+import { GraficoPicoFolguistas } from "./pico-chart";
 
 const MESES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -60,6 +61,14 @@ export default async function HistoricoPage({
             <p className="col-span-2 text-sm text-gray-500">Sem registros neste mês.</p>
           )}
         </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-gray-500 uppercase">
+          Pico de folguistas
+        </h2>
+        <GraficoPicoFolguistas totais={totais} />
+        <p className="mt-1 text-xs text-gray-400">Em vermelho: quem mais folgou no período.</p>
       </section>
 
       <section>

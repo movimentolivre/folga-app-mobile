@@ -1,14 +1,42 @@
-import { getColaboradoresAtivos, getFolgasRecentes } from "@/actions/folgas";
+import { getColaboradoresAtivos, getFolgasRecentes, getRankingJustica } from "@/actions/folgas";
 import { BotaoMarcarFolga } from "./marcar-folga-button";
 
 export default async function DashboardPage() {
-  const [colaboradores, recentes] = await Promise.all([
+  const [colaboradores, recentes, ranking] = await Promise.all([
     getColaboradoresAtivos(),
     getFolgasRecentes(5),
+    getRankingJustica(),
   ]);
+
+  const top3 = ranking.slice(0, 3);
 
   return (
     <div className="space-y-8">
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-gray-500 uppercase">
+          Sugestão de rodízio (mais justo agora)
+        </h2>
+        <div className="space-y-2">
+          {top3.map((r, i) => (
+            <div
+              key={r.colaboradorId}
+              className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-4 py-2 text-sm"
+            >
+              <span className="font-medium">
+                {i + 1}º {r.nome}
+              </span>
+              <span className="text-gray-500">
+                {r.totalNoMes} folga(s) este mês
+                {r.diasSemFolgar < 999 ? ` · ${r.diasSemFolgar}d sem folgar` : " · nunca folgou"}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-1 text-xs text-gray-400">
+          Só uma sugestão — qualquer colaborador pode marcar folga a qualquer momento.
+        </p>
+      </section>
+
       <section>
         <h2 className="mb-3 text-sm font-semibold text-gray-500 uppercase">
           Quem está de folga hoje?
