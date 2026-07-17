@@ -22,6 +22,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Link href="/historico" className="flex-1 py-3 text-center text-sm font-medium">
           Histórico
         </Link>
+        <Link href="/colaboradores" className="flex-1 py-3 text-center text-sm font-medium">
+          Colaboradores
+        </Link>
       </nav>
     </div>
   );

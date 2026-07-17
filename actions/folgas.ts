@@ -43,6 +43,7 @@ export async function getColaboradoresAtivos() {
     .from("colaboradores")
     .select("*")
     .eq("ativo", true)
+    .eq("em_ferias", false)
     .order("nome");
 
   if (error) throw new Error(error.message);
@@ -55,6 +56,70 @@ export async function getColaboradores() {
 
   if (error) throw new Error(error.message);
   return data;
+}
+
+export async function getColaboradoresEmFerias() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("colaboradores")
+    .select("*")
+    .eq("em_ferias", true)
+    .order("nome");
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function marcarFerias(colaboradorId: number, inicio: string, fim: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("colaboradores")
+    .update({ em_ferias: true, ferias_inicio: inicio, ferias_fim: fim, updated_at: new Date().toISOString() })
+    .eq("id", colaboradorId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/");
+  revalidatePath("/colaboradores");
+}
+
+export async function encerrarFerias(colaboradorId: number) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("colaboradores")
+    .update({
+      em_ferias: false,
+      ferias_inicio: null,
+      ferias_fim: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", colaboradorId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/");
+  revalidatePath("/colaboradores");
+}
+
+export async function alternarAtivo(colaboradorId: number, ativo: boolean) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("colaboradores")
+    .update({ ativo, updated_at: new Date().toISOString() })
+    .eq("id", colaboradorId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/");
+  revalidatePath("/colaboradores");
+}
+
+export async function adicionarColaborador(nome: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("colaboradores").insert({ nome });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/colaboradores");
 }
 
 export async function registrarFolga(colaboradorId: number) {
@@ -167,7 +232,8 @@ export async function getRankingJustica() {
   const { data: colaboradores, error: colabError } = await supabase
     .from("colaboradores")
     .select("*")
-    .eq("ativo", true);
+    .eq("ativo", true)
+    .eq("em_ferias", false);
   if (colabError) throw new Error(colabError.message);
 
   const { data: todasFolgas, error: folgasError } = await supabase

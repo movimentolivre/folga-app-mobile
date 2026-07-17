@@ -1,18 +1,47 @@
-import { getColaboradoresAtivos, getFolgasRecentes, getPeriodoAtualLabel, getRankingJustica } from "@/actions/folgas";
+import {
+  getColaboradoresAtivos,
+  getColaboradoresEmFerias,
+  getFolgasRecentes,
+  getPeriodoAtualLabel,
+  getRankingJustica,
+} from "@/actions/folgas";
 import { BotaoMarcarFolga } from "./marcar-folga-button";
 
 export default async function DashboardPage() {
-  const [colaboradores, recentes, ranking, periodoLabel] = await Promise.all([
+  const [colaboradores, recentes, ranking, periodoLabel, emFerias] = await Promise.all([
     getColaboradoresAtivos(),
     getFolgasRecentes(5),
     getRankingJustica(),
     getPeriodoAtualLabel(),
+    getColaboradoresEmFerias(),
   ]);
 
   const top3 = ranking.slice(0, 3);
 
   return (
     <div className="space-y-8">
+      {emFerias && emFerias.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-gray-500 uppercase">Em férias</h2>
+          <div className="space-y-2">
+            {emFerias.map((c) => (
+              <div
+                key={c.id}
+                className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm"
+              >
+                <span className="font-medium">{c.nome}</span>
+                <span className="text-amber-700">
+                  até{" "}
+                  {c.ferias_fim
+                    ? new Date(c.ferias_fim + "T00:00:00").toLocaleDateString("pt-BR")
+                    : "—"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section>
         <h2 className="mb-3 text-sm font-semibold text-gray-500 uppercase">
           Sugestão de rodízio · fechamento {periodoLabel}
