@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { alternarAtivo, encerrarFerias, marcarFerias } from "@/actions/folgas";
+import { alternarAtivo, encerrarFerias, excluirColaborador, marcarFerias } from "@/actions/folgas";
 
 type Colaborador = {
   id: number;
@@ -41,6 +41,14 @@ export function LinhaColaborador({ colaborador }: { colaborador: Colaborador }) 
 
   const handleAlternarAtivo = () => {
     startTransition(() => alternarAtivo(colaborador.id, !colaborador.ativo));
+  };
+
+  const handleExcluir = () => {
+    const confirmado = confirm(
+      `Excluir "${colaborador.nome}" para sempre? Isso também apaga todo o histórico de folgas dele(a). Essa ação não pode ser desfeita.\n\nSe você só quer que ele(a) pare de aparecer nas listas, use "Desativar" em vez de excluir.`,
+    );
+    if (!confirmado) return;
+    startTransition(() => excluirColaborador(colaborador.id));
   };
 
   return (
@@ -93,6 +101,15 @@ export function LinhaColaborador({ colaborador }: { colaborador: Colaborador }) 
               Marcar férias
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={handleExcluir}
+            disabled={isPending}
+            className="text-xs text-red-600 underline disabled:opacity-50"
+          >
+            Excluir
+          </button>
         </div>
       </div>
 

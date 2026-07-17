@@ -122,6 +122,18 @@ export async function adicionarColaborador(nome: string) {
   revalidatePath("/colaboradores");
 }
 
+/** Exclui o colaborador. Como as folgas referenciam o colaborador com
+ * "on delete cascade", o histórico de folgas dele também é apagado. */
+export async function excluirColaborador(colaboradorId: number) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("colaboradores").delete().eq("id", colaboradorId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/colaboradores");
+  revalidatePath("/");
+  revalidatePath("/historico");
+}
+
 export async function registrarFolga(colaboradorId: number) {
   const supabase = await createClient();
   const agora = new Date();
