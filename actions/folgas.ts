@@ -236,6 +236,16 @@ export async function getPeriodoAtualLabel() {
   return `${fmt(inicio)} a ${fmt(fim)}`;
 }
 
+/** Dias restantes até o fechamento do período atual (dia 15). */
+export async function getDiasParaFechamento() {
+  const agora = new Date();
+  const { fim } = getPeriodoAtual(agora);
+  const inicioDoDia = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const fimDoDia = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate());
+  const dias = Math.round((fimDoDia.getTime() - inicioDoDia.getTime()) / (1000 * 60 * 60 * 24));
+  return dias;
+}
+
 export async function getRankingJustica() {
   const supabase = await createClient();
   const agora = new Date();

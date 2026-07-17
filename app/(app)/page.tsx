@@ -1,6 +1,7 @@
 import {
   getColaboradoresAtivos,
   getColaboradoresEmFerias,
+  getDiasParaFechamento,
   getFolgasRecentes,
   getPeriodoAtualLabel,
   getRankingJustica,
@@ -8,18 +9,28 @@ import {
 import { BotaoMarcarFolga } from "./marcar-folga-button";
 
 export default async function DashboardPage() {
-  const [colaboradores, recentes, ranking, periodoLabel, emFerias] = await Promise.all([
-    getColaboradoresAtivos(),
-    getFolgasRecentes(5),
-    getRankingJustica(),
-    getPeriodoAtualLabel(),
-    getColaboradoresEmFerias(),
-  ]);
+  const [colaboradores, recentes, ranking, periodoLabel, emFerias, diasParaFechamento] =
+    await Promise.all([
+      getColaboradoresAtivos(),
+      getFolgasRecentes(5),
+      getRankingJustica(),
+      getPeriodoAtualLabel(),
+      getColaboradoresEmFerias(),
+      getDiasParaFechamento(),
+    ]);
 
   const top3 = ranking.slice(0, 3);
 
   return (
     <div className="space-y-8">
+      {diasParaFechamento <= 3 && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {diasParaFechamento === 0
+            ? "Hoje é o último dia do período! Não esqueça de salvar o relatório em PDF."
+            : `Faltam ${diasParaFechamento} dia(s) pra fechar o período. Lembre de salvar o relatório em PDF no Histórico.`}
+        </div>
+      )}
+
       {emFerias && emFerias.length > 0 && (
         <section>
           <h2 className="mb-3 text-sm font-semibold text-gray-500 uppercase">Em férias</h2>

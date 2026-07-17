@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { registrarFolga } from "@/actions/folgas";
+import { useToast } from "@/components/toast-provider";
 
 export function BotaoMarcarFolga({
   colaboradorId,
@@ -12,18 +13,18 @@ export function BotaoMarcarFolga({
 }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const { showToast } = useToast();
 
   const handleClick = () => {
     setError(null);
-    setSuccess(false);
     startTransition(async () => {
       try {
         await registrarFolga(colaboradorId);
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 2000);
+        showToast(`Folga registrada para ${nome} ✓`, "success");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao registrar folga");
+        const message = err instanceof Error ? err.message : "Erro ao registrar folga";
+        setError(message);
+        showToast(message, "error");
       }
     });
   };
@@ -37,7 +38,7 @@ export function BotaoMarcarFolga({
       >
         <span className="font-medium">{nome}</span>
         <span className="text-sm text-primary">
-          {isPending ? "Registrando..." : success ? "Registrado ✓" : "Marcar folga"}
+          {isPending ? "Registrando..." : "Marcar folga"}
         </span>
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
