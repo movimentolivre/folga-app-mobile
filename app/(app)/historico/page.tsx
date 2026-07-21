@@ -24,8 +24,23 @@ export default async function HistoricoPage({
 }) {
   const params = await searchParams;
   const now = new Date();
-  const mes = Number(params.mes) || now.getMonth() + 1;
-  const ano = Number(params.ano) || now.getFullYear();
+
+  // O período de fechamento vai de 16 a 15. Se hoje já passou do dia 16, o
+  // período "atual" fecha no MÊS SEGUINTE — precisa ser o mesmo cálculo usado
+  // no dashboard (getPeriodoAtual), senão a tela abre mostrando o período
+  // errado (já fechado) por padrão.
+  let mesPadrao = now.getMonth() + 1;
+  let anoPadrao = now.getFullYear();
+  if (now.getDate() >= 16) {
+    mesPadrao += 1;
+    if (mesPadrao > 12) {
+      mesPadrao = 1;
+      anoPadrao += 1;
+    }
+  }
+
+  const mes = Number(params.mes) || mesPadrao;
+  const ano = Number(params.ano) || anoPadrao;
 
   const [folgas, totais] = await Promise.all([
     getFolgasPorMes(mes, ano),
