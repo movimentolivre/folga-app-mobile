@@ -228,6 +228,60 @@ export async function getTotalFolgasPorColaborador(mes: number, ano: number) {
   }));
 }
 
+/** Total acumulado de folgas por colaborador desde o início (todos os períodos,
+ * sem filtro de data). Só pra consulta — o algoritmo de rodízio continua usando
+ * o total do período atual, não este. */
+/** Lista todos os períodos de fechamento (16-15) que já têm alguma folga
+ * registrada, mais recente primeiro — pra navegar sem precisar escolher
+ * mês/ano manualmente toda vez. */
+export async function getPeriodosDisponiveis() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("folgas").select("data_hora");
+  if (error) throw new Error(error.message);
+
+  const set = new Set<string>();
+  for (const f of data ?? []) {
+    const d = new Date(f.data_hora);
+    let mes = d.getMonth() + 1;
+    let ano = d.getFullYear();
+    if (d.getDate() >= 16) {
+      mes += 1;
+      if (mes > 12) {
+        mes = 1;
+        ano += 1;
+      }
+    }
+    set.add(`${mes}-${ano}`);
+  }
+
+  return Array.from(set)
+    .map((s) => {
+      const [mes, ano] = s.split("-").map(Number);
+      return { mes, ano };
+    })
+    .sort((a, b) => b.ano - a.ano || b.mes - a.mes);
+}
+
+export async function getTotalGeralPorColaborador() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("folgas")
+    .select("colaborador_id, colaboradores(nome)");
+
+  if (error) throw new Error(error.message);
+
+  const totals = new Map<number, { nome: string; total: number }>();
+  for (const folga of data ?? []) {
+    const nome = (folga.colaboradores as unknown as { nome: string } | null)?.nome ?? "—";
+    const current = totals.get(folga.colaborador_id);
+    totals.set(folga.colaborador_id, { nome, total: (current?.total ?? 0) + 1 });
+  }
+
+  return Array.from(totals.entries())
+    .map(([colaboradorId, v]) => ({ colaboradorId, ...v }))
+    .sort((a, b) => b.total - a.total);
+}
+
 /** Retorna o rótulo do período de fechamento atual, ex: "16/06 a 15/07/2026". */
 export async function getPeriodoAtualLabel() {
   const { inicio, fim } = getPeriodoAtual();

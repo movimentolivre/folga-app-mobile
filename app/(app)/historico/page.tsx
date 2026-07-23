@@ -1,4 +1,4 @@
-import { getFolgasPorMes, getTotalFolgasPorColaborador } from "@/actions/folgas";
+import { getFolgasPorMes, getPeriodosDisponiveis, getTotalFolgasPorColaborador, getTotalGeralPorColaborador } from "@/actions/folgas";
 import { BotaoDeletarFolga } from "./deletar-button";
 import { GraficoPicoFolguistas } from "./pico-chart";
 import { BotaoImprimir } from "./print-button";
@@ -42,9 +42,11 @@ export default async function HistoricoPage({
   const mes = Number(params.mes) || mesPadrao;
   const ano = Number(params.ano) || anoPadrao;
 
-  const [folgas, totais] = await Promise.all([
+  const [folgas, totais, totalGeral, periodosDisponiveis] = await Promise.all([
     getFolgasPorMes(mes, ano),
     getTotalFolgasPorColaborador(mes, ano),
+    getTotalGeralPorColaborador(),
+    getPeriodosDisponiveis(),
   ]);
 
   const anos = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
@@ -74,6 +76,27 @@ export default async function HistoricoPage({
           <BotaoImprimir />
         </div>
       </form>
+
+      {periodosDisponiveis.length > 0 && (
+        <div className="flex flex-wrap gap-2 print:hidden">
+          {periodosDisponiveis.map((p) => {
+            const ativo = p.mes === mes && p.ano === ano;
+            return (
+              <a
+                key={`${p.mes}-${p.ano}`}
+                href={`/historico?mes=${p.mes}&ano=${p.ano}`}
+                className={`rounded-full border px-3 py-1 text-xs ${
+                  ativo
+                    ? "border-primary bg-primary text-white"
+                    : "border-gray-300 bg-white text-gray-600"
+                }`}
+              >
+                {labelPeriodo(p.mes, p.ano)}
+              </a>
+            );
+          })}
+        </div>
+      )}
 
       <div id="relatorio" className="space-y-6">
         <div className="hidden print:block">
@@ -105,6 +128,26 @@ export default async function HistoricoPage({
           <GraficoPicoFolguistas totais={totais} />
           <p className="mt-1 text-xs text-gray-400 print:hidden">
             Em vermelho: quem mais folgou no período.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-gray-500 uppercase">
+            Total geral (desde o início, todos os períodos)
+          </h2>
+          <div className="grid grid-cols-2 gap-2 print:grid-cols-3">
+            {totalGeral.map((t) => (
+              <div key={t.colaboradorId} className="rounded-lg border bg-white p-3 text-sm">
+                <p className="font-medium">{t.nome}</p>
+                <p className="text-gray-500">{t.total} folga(s) no total</p>
+              </div>
+            ))}
+            {totalGeral.length === 0 && (
+              <p className="col-span-2 text-sm text-gray-500">Nenhuma folga registrada ainda.</p>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-gray-400 print:hidden">
+            Só consulta — o algoritmo de rodízio usa o total do período atual, não este.
           </p>
         </section>
 
